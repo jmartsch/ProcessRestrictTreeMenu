@@ -1,0 +1,56 @@
+<?php namespace ProcessWire;
+
+class ProcessRestrictTreeMenu extends WireData implements Module
+{
+
+    public static function getModuleInfo()
+    {
+
+        return array(
+            'title' => 'restrictTreeMenu',
+            'author' => 'Jens Martsch',
+            'version' => 100,
+            'summary' => 'Hide the "Tree" link in the admin for non-superusers and redirect them to another page',
+            'href' => '',
+            'singular' => true,
+            'autoload' => function () {
+                if (wire('user')->isSuperuser()) return false;
+                return true;
+            },
+        );
+    }
+
+
+    public function init()
+    {
+        // use this if you want to redirect non-superusers to another page
+        $this->addHookBefore('ProcessHome::execute', $this, 'redirectRestrictedUsers');
+
+
+        $this->addHookAfter('Page::viewable', $this, 'viewable');
+    }
+
+    /**
+     * Redirect non-superusers to another page after login
+     */
+    public function redirectRestrictedUsers(HookEvent $event)
+    {
+        // use this if you want to redirect non-superusers to another page
+        if (!$this->user->isSuperuser()) {
+            $this->session->redirect('page/bewerbungen/'); // enter the path to the page where non-superusers should be redirected
+        }
+    }
+
+    /**
+     * Users with missing permission can not access the "Tree" page
+     */
+    public function viewable(HookEvent $event)
+    {
+        $page = $event->object;
+        $user = $this->user;
+        if ($page->id == 3 && !$user->hasPermission('view-pagetree')) {
+            $event->return = false;
+        }
+
+    }
+}
